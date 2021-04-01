@@ -47,6 +47,7 @@ prompt_det("Entering Detector Level CMakeLists.txt.")
 
 #dependencies
 if(OpenCV_FOUND)
+    include_directories(${OpenCV_INCLUDE_DIRS})
     set(Dependencies ${Dependencies} ${OpenCV_LIBS})
 endif(OpenCV_FOUND)
 

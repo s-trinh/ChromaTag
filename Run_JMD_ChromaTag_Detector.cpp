@@ -55,6 +55,7 @@
 #ifdef OPENCV_FOUND
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/calib3d.hpp>
 #endif
 
 //lcm
@@ -463,6 +464,51 @@ void Publish_LCM() { myWriter.Writer_Warning(ProgramName,"Publish_LCM","LCM Libr
 
 /*----- Process Images -----*/
 #ifdef OPENCV_FOUND
+void Process_Image(cv::Mat &image)
+{
+    //Detect
+    double t0 = (double)cv::getTickCount();
+    myChromaTag.Detect_BGRToLAB(image);
+    t0 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+
+    //Decode
+    double t1 = (double)cv::getTickCount();
+    myChromaTag.Decode(image);
+    t1 = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
+
+    //Pose
+    double t2 = (double)cv::getTickCount();
+    myChromaTag.Pose();
+    t2 = ((double)cv::getTickCount() - t2)/cv::getTickFrequency();
+
+    //Get detections
+    JMD_ChromaTag_Collection *myDetections = myChromaTag.Detections();
+
+    for(JMD_ChromaTag_Collection::iterator cit = myDetections->begin(); cit != myDetections->end(); ++cit)
+    {
+        JMD_ChromaTag_Detection *detection = *cit;
+        cv::Mat rvec(3, 1, CV_64FC1), tvec(3, 1, CV_64FC1);
+        for (int i = 0; i < 3; i++) {
+            rvec.at<double>(i,0) = detection->TagRotation[i];
+            tvec.at<double>(i,0) = detection->TagTranslation[i];
+        }
+
+        cv::Mat K = cv::Mat::eye(3, 3, CV_64FC1);
+        cv::Mat Dist = cv::Mat::zeros(5, 1, CV_64FC1);
+        cv::drawFrameAxes(image, K, Dist, rvec, tvec, 0.05f);
+    }
+
+    //display
+//    myWriter.Writer_Continued("    Detection Time = " + myWriter.ToString(t0),true);
+//    myWriter.Writer_Continued("    Decoding Time  = " + myWriter.ToString(t1),true);
+//    myWriter.Writer_Continued("    Pose Time      = " + myWriter.ToString(t2),true);
+//    myWriter.Writer_Continued("    FPS for Detect+Decode = " + myWriter.ToString(1/(t0+t1)),true);
+//    myWriter.Writer_Continued("",true);
+
+    namedWindow( ProgramName, cv::WINDOW_AUTOSIZE );
+    imshow( ProgramName, image );
+}
+
 void Process_Images(std::vector<std::string> &ImageList)
 {
 	//iterate over image list
@@ -542,11 +588,11 @@ void Process_Images(std::vector<std::string> &ImageList)
 				myWriter.Writer_Line(Log_Detect_FileNo,log_dstr);
 			}
 			
-			//publish
-			if( !(LCM_Out_Channel.empty()) )
-			{
-				Publish_LCM(myDetections);
-			}
+//			//publish
+//			if( !(LCM_Out_Channel.empty()) )
+//			{
+//				Publish_LCM(myDetections);
+//			}
 
 			//frame count
 			framect++;
@@ -789,10 +835,24 @@ int main( int argc, char **argv )
 	//no valid input
 	else 
 	{ 
-		myWriter.Writer_Warning(ProgramName,"Main","No valid input method provided:",false);
-		myWriter.Writer_Continued("        0. No images provided on command line.",true);
-		myWriter.Writer_Continued("        1. Folder of images to process (-F) not given.",true);
-		myWriter.Writer_Continued("        2. Subscribe with LCM (-b) not given or libraries missing.",true);
+//		myWriter.Writer_Warning(ProgramName,"Main","No valid input method provided:",false);
+//		myWriter.Writer_Continued("        0. No images provided on command line.",true);
+//		myWriter.Writer_Continued("        1. Folder of images to process (-F) not given.",true);
+//		myWriter.Writer_Continued("        2. Subscribe with LCM (-b) not given or libraries missing.",true);
+
+        cv::VideoCapture capture(3);
+        cv::Mat frame;
+
+        while (true) {
+            capture >> frame;
+            Process_Image(frame);
+
+//            cv::imshow("Camera", frame);
+            int c = cv::waitKey(1);
+            if (c == 27) {
+                break;
+            }
+        }
 	}
 	
 	/*--- End Select Input ---*/

@@ -187,7 +187,7 @@ void JMD::JMD_ChromaTag_Pose::Private_Pose()
 			curr_detection->TagRotation[0] = rvec.at<double>(0);
 			curr_detection->TagRotation[1] = rvec.at<double>(1);
 			curr_detection->TagRotation[2] = rvec.at<double>(2);
-			curr_detection->TagRotation[3] = rvec.at<double>(3);
+//			curr_detection->TagRotation[3] = rvec.at<double>(3);
 			
 			//populate detection with translation vector
 			curr_detection->TagTranslation[0] = tvec.at<double>(0);
@@ -211,8 +211,10 @@ void JMD::JMD_ChromaTag_Pose::Private_Pose()
 bool JMD::JMD_ChromaTag_Pose::Private_PnP(std::vector<cv::Point2f> &image_points_param, cv::Mat &rvec_param, cv::Mat &tvec_param)
 {
 	//create cv::Mat version of intrinsics and distortion coefficients
-	cv::Mat K(3, 3, CV_64F, myK);
-	cv::Mat Dist(1, 5, CV_64F, myDistCoefs);
+//	cv::Mat K(3, 3, CV_64F, myK);
+//	cv::Mat Dist(1, 5, CV_64F, myDistCoefs);
+    cv::Mat K = cv::Mat::eye(3, 3, CV_64FC1);
+    cv::Mat Dist = cv::Mat::zeros(5, 1, CV_64FC1);
 	
 	//try pnp
 	try
